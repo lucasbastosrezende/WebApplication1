@@ -1,0 +1,27 @@
+﻿@model List<WebApplication1.Models.SelectedPage>  
+
+@{  
+    // Ensure the '@page' directive is not used incorrectly in this file.  
+    // The '@page' directive is typically used in Razor Pages, not in Razor Views.  
+    // If '@page' is not required, remove it from the file entirely.  
+}  
+
+<h2>Seleção para Impressão do PDF: @ViewBag.FileName</h2>  
+
+<table>  
+    <thead>  
+        <tr>  
+            <th>Página</th>  
+            <th>Cópias</th>  
+        </tr>  
+    </thead>  
+    <tbody>  
+        @foreach(var selectedPage in Model)  
+        {  
+            <tr>  
+                <td>@selectedPage.PageNumber</td>  
+                <td>@selectedPage.Copies</td>  
+            </tr>  
+        }  
+    </tbody>
+</table>

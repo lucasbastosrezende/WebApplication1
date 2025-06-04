@@ -1,6 +1,8 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using WebApplication1.Models;
+using System.Text.Json;
 
 namespace WebApplication1.Controllers
 {
@@ -17,6 +19,30 @@ namespace WebApplication1.Controllers
         {
             return View();
         }
+
+        [HttpPost]
+        [HttpPost]
+        public IActionResult EnviarPDF(IFormFile arquivo, List<SelectedPage> pagesSelected)
+        {
+            if (arquivo == null || arquivo.Length == 0)
+            {
+                ModelState.AddModelError("", "Arquivo inválido.");
+                return View("Index");
+            }
+
+            // Só para debug: ver quantos objetos chegaram
+            System.Diagnostics.Debug.WriteLine($"Páginas recebidas: {pagesSelected?.Count ?? 0}");
+            foreach (var p in pagesSelected ?? Enumerable.Empty<SelectedPage>())
+            {
+                System.Diagnostics.Debug.WriteLine($"Page: {p.PageNumber}, Copies: {p.Copies}");
+            }
+
+            // Passa para a view Modelo, incluindo o nome do arquivo no ViewBag
+            ViewBag.FileName = arquivo.FileName;
+
+            return View("~/Views/Impressao/Modelo.cshtml", pagesSelected);
+        }
+
 
         public IActionResult Privacy()
         {

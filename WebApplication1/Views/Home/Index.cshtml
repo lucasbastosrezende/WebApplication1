@@ -1,8 +1,133 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Visualizar PDF";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<h2>Upload de PDF</h2>  
+<form asp-controller="Home" asp-action="EnviarPDF" enctype="multipart/form-data" method="post">
+    <input type="file" id="file-input" name="arquivo" accept="application/pdf" />  
+    <div id="pdf-container"></div>  
+    <button id="enviar-dados" type="button">Enviar Seleções</button>  
+</form>  
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>  
+
+<script>  
+    const fileInput = document.getElementById('file-input');  
+    const pdfContainer = document.getElementById('pdf-container');  
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';  
+
+    fileInput.addEventListener('change', function (e) {  
+        const file = e.target.files[0];  
+        if (!file || file.type !== 'application/pdf') {  
+            alert('Por favor, selecione um arquivo PDF válido.');  
+            return;  
+        }  
+
+        const fileReader = new FileReader();  
+
+        fileReader.onload = function () {  
+            const typedarray = new Uint8Array(this.result);  
+
+            pdfjsLib.getDocument(typedarray).promise.then(function (pdf) {  
+                pdfContainer.innerHTML = ''; // limpa visualizações anteriores  
+
+                for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {  
+                    pdf.getPage(pageNumber).then(function (page) {  
+                        const scale = 1.2;  
+                        const viewport = page.getViewport({ scale });  
+
+                        const canvas = document.createElement('canvas');  
+                        const context = canvas.getContext('2d');  
+                        canvas.height = viewport.height;  
+                        canvas.width = viewport.width;  
+
+                        const pageDiv = document.createElement('div');  
+                        pageDiv.style.marginBottom = '20px';  
+                        pageDiv.style.border = '1px solid #ccc';  
+                        pageDiv.style.padding = '10px';  
+
+                        const checkbox = document.createElement('input');  
+                        checkbox.type = 'checkbox';  
+                        checkbox.id = `print-page-${page.pageNumber}`;  
+                        checkbox.name = 'selectedPages';  
+
+                        const label = document.createElement('label');  
+                        label.htmlFor = checkbox.id;  
+                        label.textContent = ` Página ${page.pageNumber}`;  
+                        label.style.marginLeft = '5px';  
+
+                        const quantityContainer = document.createElement('span');  
+                        quantityContainer.style.display = 'none'; // inicialmente escondido  
+
+                        const quantityLabel = document.createElement('label');  
+                        quantityLabel.textContent = ' Cópias: ';  
+                        quantityLabel.style.marginLeft = '10px';  
+
+                        const quantityInput = document.createElement('input');  
+                        quantityInput.type = 'number';  
+                        quantityInput.min = 1;  
+                        quantityInput.value = 1;  
+                        quantityInput.id = `copies-${page.pageNumber}`;  
+                        quantityInput.style.width = '60px';  
+
+                        quantityContainer.appendChild(quantityLabel);  
+                        quantityContainer.appendChild(quantityInput);  
+
+                        checkbox.addEventListener('change', function () {  
+                            quantityContainer.style.display = this.checked ? 'inline-block' : 'none';  
+                        });  
+
+                        pageDiv.appendChild(canvas);  
+                        pageDiv.appendChild(checkbox);  
+                        pageDiv.appendChild(label);  
+                        pageDiv.appendChild(quantityContainer);  
+
+                        pdfContainer.appendChild(pageDiv);  
+
+                        const renderContext = {  
+                            canvasContext: context,  
+                            viewport: viewport  
+                        };  
+                        page.render(renderContext);  
+                    });  
+                }  
+            });  
+        };  
+
+        fileReader.readAsArrayBuffer(file);  
+    });
+    document.getElementById('enviar-dados').addEventListener('click', function () {
+        // Remove inputs antigos
+        const oldInputs = document.querySelectorAll('input[name^="pagesSelected"]');
+        oldInputs.forEach(i => i.remove());
+
+        const checkedBoxes = document.querySelectorAll('input[name="selectedPages"]:checked');
+
+        let index = 0;
+
+        checkedBoxes.forEach(checkbox => {
+            const pageNumber = checkbox.id.replace('print-page-', '');
+            const quantityInput = document.getElementById(`copies-${pageNumber}`);
+            const quantity = quantityInput ? quantityInput.value : 1;
+
+            const inputPage = document.createElement('input');
+            inputPage.type = 'hidden';
+            inputPage.name = `pagesSelected[${index}].PageNumber`;
+            inputPage.value = pageNumber;
+
+            const inputCopies = document.createElement('input');
+            inputCopies.type = 'hidden';
+            inputCopies.name = `pagesSelected[${index}].Copies`;
+            inputCopies.value = quantity;
+
+            this.form.appendChild(inputPage);
+            this.form.appendChild(inputCopies);
+
+            index++;
+        });
+
+        this.form.submit();
+    });
+
+
+</script>
